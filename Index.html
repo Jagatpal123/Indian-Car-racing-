@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indian Car Racing</title>
+
+  <!-- Manifest JSON inline -->
+  <script type="application/manifest+json">
+  {
+    "name": "Indian Car Racing",
+    "short_name": "CarRacing",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0d6efd",
+    "description": "A fun and challenging Indian Car Racing game.",
+    "icons": [
+      {
+        "src": "icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
+  </script>
+
+  <!-- CSS -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #87ceeb, #ffffff);
+      text-align: center;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #0d6efd;
+    }
+    canvas {
+      border: 2px solid #0d6efd;
+      display: block;
+      margin: 20px auto;
+    }
+    button {
+      margin: 10px;
+      padding: 12px 20px;
+      border: 2px solid #0d6efd;
+      border-radius: 12px;
+      background: white;
+      color: #0d6efd;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #0d6efd;
+      color: white;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <h1>🚗 Indian Car Racing</h1>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div>
+    <button onclick="resetGame()">🔄 Reset</button>
+    <button onclick="accelerate()">⚡ Accelerate</button>
+    <button onclick="brake()">🛑 Brake</button>
+  </div>
+
+  <!-- JS: Game Logic -->
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let carY = 500;
+    let score = 0;
+
+    function drawCar() {
+      ctx.fillStyle = "red";
+      ctx.fillRect(180, carY, 40, 80);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Road
+      ctx.fillStyle = "#808080";
+      ctx.fillRect(150, 0, 100, 600);
+
+      // Car
+      drawCar();
+
+      // Score
+      ctx.fillStyle = "black";
+      ctx.font = "16px Arial";
+      ctx.fillText("Score: " + score, 10, 20);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function resetGame() {
+      score = 0;
+      carY = 500;
+    }
+
+    function accelerate() {
+      carY -= 10;
+      score += 5;
+    }
+
+    function brake() {
+      carY += 10;
+    }
+
+    gameLoop();
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js")
+        .then(() => console.log("SW Registered"))
+        .catch(err => console.log("SW Failed", err));
+    }
+  </script>
+</body>
+</html>
