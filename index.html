@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Racing - Enhanced</title>
+    <style>
+        /* General Setup */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #loadingLogo {
+            width: 300px;
+            height: 300px;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff0000, #ff9900);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+        
+        #loadingBarContainer {
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #loadingBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #ff0000, #ff9900);
+            transition: width 0.3s;
+        }
+        
+        #loadingText {
+            color: white;
+            font-size: 20px;
+            margin-top: 15px;
+        }
+
+        /* Game Container */
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: none;
+        }
+
+        /* Canvas for Background */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            filter: saturate(130%) brightness(110%) contrast(120%);
+        }
+
+        /* Container for Moving Objects */
+        #gameObjectContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Game Objects (Player, Obstacles, Coins) */
+        .gameObject {
+            position: absolute;
+            transform: translate(-50%, -50%); 
+            filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.7));
+        }
+
+        #playerCar { z-index: 4; }
+        .obstacle { z-index: 3; }
+        .coin { z-index: 2; }
+        .life { z-index: 2; }
+        .diamond { z-index: 2; }
+        .diamond1 { z-index: 2; }
+
+        /* UI Elements */
+        #scoreBox {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 1.5em;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 2px 2px 4px #000;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+        }
+        
+        #livesContainer {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        #livesCount {
+            font-size: 1.2em;
+            margin-left: 5px;
+            font-weight: bold;
+            color: #ff5252;
+        }
+        
+        .life-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #ff5252;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center;
+        }
+        
+        #scoreDisplay {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        /* Speed Controls */
+        #speedControls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 2px 2px 4px #000;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #speedDisplay {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .speedButton {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 8px;
+            cursor: pointer;
+            font-size: 2em;
+            font-weight: bold;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        
+        .speedButton:active {
+            transform: scale(0.9);
+        }
+        
+        #speedUp { 
+            color: #4CAF50; 
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        #speedDown { 
+            color: #F44336; 
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        /* Controls */
+        .controlButton {
+            position: fixed;
+            bottom: 20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            font-size: 3em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #leftButton { left: 20px; }
+        #rightButton { right: 20px; }
+        
+        /* Game State Screens */
+        .gameScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+            text-align: center;
+        }
+        
+        #menuScreen {
+            background: rgba(0,0,0,0.3);
+        }
+
+        #gameOverScreen {
+            background: rgba(0,0,0,0.7);
+            display: none; /* Initially hidden */
+        }
+        
+        .gameTitle {
+            font-size: 5em;
+            text-shadow: 5px 5px 10px #000;
+        }
+        
+        .action-button {
+            padding: 20px 40px;
+            font-size: 2.5em;
+            color: white;
+            border: 3px solid #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            margin-top: 30px;
+        }
+
+        #startButton {
+            background: #ff4500;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+        }
+
+        #restartButton {
+            background: #28a745; /* Green color */
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); /* Matching green shadow */
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .gameOverText {
+            font-size: 6em;
+            color: #ff0000;
+            text-shadow: 3px 3px 10px #000;
+        }
+        
+        /* Sound Toggle */
+        #soundToggle {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            z-index: 25;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingScreen">
+        <div id="loadingLogo">CAR RACING</div>
+        <div id="loadingBarContainer">
+            <div id="loadingBar"></div>
+        </div>
+        <div id="loadingText">Loading assets... 0%</div>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameObjectContainer"></div>
+        
+        <div id="scoreBox">
+            <div id="livesContainer">
+                <div class="life-icon"></div>
+                <span id="livesCount">3</span>
+            </div>
+            <div id="scoreDisplay">Score: 0</div>
+        </div>
+        
+        <div id="speedControls">
+            <div id="speedDisplay">Speed: 1.0x</div>
+            <div style="display: flex;">
+                <div id="speedUp" class="speedButton">+</div>
+                <div id="speedDown" class="speedButton">-</div>
+            </div>
+        </div>
+        
+        <div id="leftButton" class="controlButton">◀</div>
+        <div id="rightButton" class="controlButton">▶</div>
+        
+        <div id="soundToggle">🔊 Sound On</div>
+
+        <div id="menuScreen" class="gameScreen">
+            <h1 class="gameTitle">Car Racing</h1>
+            <button id="startButton" class="action-button">Let's Start</button>
+        </div>
+        
+        <div id="gameOverScreen" class="gameScreen">
+            <h1 class="gameOverText">GAME OVER</h1>
+            <div style="font-size: 2em; margin-bottom: 20px;">Final Score: <span id="finalScore">0</span></div>
+            <button id="restartButton" class="action-button">Restart</button>
+        </div>
+        
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingBar = document.getElementById('loadingBar');
+        const loadingText = document.getElementById('loadingText');
+        const gameContainer = document.getElementById('gameContainer');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameObjectContainer = document.getElementById('gameObjectContainer');
+        const scoreBox = document.getElementById('scoreBox');
+        const livesCount = document.getElementById('livesCount');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const leftButton = document.getElementById('leftButton');
+        const rightButton = document.getElementById('rightButton');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScore = document.getElementById('finalScore');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const speedUpButton = document.getElementById('speedUp');
+        const speedDownButton = document.getElementById('speedDown');
+        const speedDisplay = document.getElementById('speedDisplay');
+        const soundToggle = document.getElementById('soundToggle');
+        const notification = document.getElementById('notification');
+
+        // Game State & Settings
+        let gameState = 'menu';
+        let score = 0;
+        let lives = 3;
+        let gameLoopId;
+        let roadY = 0;
+        let soundEnabled = true;
+        let openingSoundPlayed = false;
+        
+        // Player properties
+        let playerCar;
+        let player = { x: 0, y: 0, width: 0, height: 0, speed: 3, dx: 0 };
+
+        // Speed system
+        let gameSpeed = 3;
+        let speedMultiplier = 1;
+        const maxSpeedMultiplier = 5;
+        const minSpeedMultiplier = 0.5;
+        
+        // Road boundaries
+        const conceptualWidth = 400;
+        let leftBoundary = conceptualWidth * 0.20; 
+        let rightBoundary = conceptualWidth * 0.80;
+        
+        // Game objects arrays
+        let obstacles = [];
+        let coins = [];
+        let livesArray = [];
+        let diamonds = [];
+        let diamonds1 = [];
+        let nextObstacleSpawn = 0;
+        let nextCoinSpawn = 0;
+        let nextLifeSpawn = 0;
+        let nextDiamondSpawn = 0;
+        let nextDiamond1Spawn = 0;
+
+        // Asset preloading
+        let assetsLoaded = 0;
+        let totalAssets = 0;
+        let assets = {
+            roadImage: null,
+            playerCar: null,
+            obstacle1: null,
+            obstacle2: null,
+            obstacle3: null,
+            obstacle4: null,
+            coin: null,
+            life: null,
+            diamond: null,
+            diamond1: null
+        };
+
+        // Sound Assets
+        let sounds = {};
+        const soundFiles = {
+            background: 'carsound.mp3',
+            hit: 'carhit.mp3',
+            collect: 'collect.wav',
+            opening: 'opening.wav',
+            life: 'life.wav',
+            diamond: 'diamond.wav'
+        };
+
+        // Preload all assets
+        function preloadAssets() {
+            // Image assets to preload
+            const imageAssets = [
+                {name: 'roadImage', url: 'road.jpg'},
+                {name: 'playerCar', url: 'player_car.png'},
+                {name: 'obstacle1', url: 'obstacle1.png'},
+                {name: 'obstacle2', url: 'obstacle2.png'},
+                {name: 'obstacle3', url: 'obstacle3.png'},
+                {name: 'obstacle4', url: 'obstacle4.png'},
+                {name: 'coin', url: 'coin.gif'},
+                {name: 'life', url: 'Life.png'},
+                {name: 'diamond', url: 'Dimond.png'},
+                {name: 'diamond1', url: 'Dimond1.png'}
+            ];
+            
+            totalAssets = imageAssets.length + Object.keys(soundFiles).length;
+            
+            // Preload images
+            imageAssets.forEach(asset => {
+                const img = new Image();
+                img.onload = () => {
+                    assets[asset.name] = img;
+                    assetLoaded();
+                };
+                img.onerror = () => {
+                    console.error(`Failed to load image: ${asset.url}`);
+                    // Create a colored rectangle as fallback
+                    const fallbackCanvas = document.createElement('canvas');
+                    fallbackCanvas.width = 400;
+                    fallbackCanvas.height = 800;
+                    const fallbackCtx = fallbackCanvas.getContext('2d');
+                    
+                    if (asset.name === 'roadImage') {
+                        fallbackCtx.fillStyle = '#333';
+                        fallbackCtx.fillRect(0, 0, 400, 800);
+                        // Draw road lines
+                        fallbackCtx.fillStyle = '#fff';
+                        for (let i = 0; i < 8; i++) {
+                            fallbackCtx.fillRect(190, i * 100, 20, 50);
+                        }
+                    } else if (asset.name === 'playerCar') {
+                        fallbackCtx.fillStyle = 'blue';
+                        fallbackCtx.fillRect(50, 50, 300, 150);
+                        fallbackCtx.fillStyle = 'black';
+                        fallbackCtx.fillRect(0, 75, 400, 100);
+                    } else if (asset.name.startsWith('obstacle')) {
+                        fallbackCtx.fillStyle = 'red';
+                        fallbackCtx.fillRect(50, 50, 300, 150);
+                        fallbackCtx.fillStyle = 'black';
+                        fallbackCtx.fillRect(0, 75, 400, 100);
+                    } else if (asset.name === 'coin') {
+                        fallbackCtx.fillStyle = 'gold';
+                        fallbackCtx.beginPath();
+                        fallbackCtx.arc(200, 200, 100, 0, Math.PI * 2);
+                        fallbackCtx.fill();
+                    } else if (asset.name === 'life') {
+                        fallbackCtx.fillStyle = '#ff5252';
+                        fallbackCtx.beginPath();
+                        fallbackCtx.moveTo(200, 100);
+                        fallbackCtx.bezierCurveTo(200, 50, 300, 50, 300, 100);
+                        fallbackCtx.bezierCurveTo(300, 150, 200, 250, 200, 300);
+                        fallbackCtx.bezierCurveTo(200, 250, 100, 150, 100, 100);
+                        fallbackCtx.bezierCurveTo(100, 50, 200, 50, 200, 100);
+                        fallbackCtx.fill();
+                    } else if (asset.name === 'diamond') {
+                        fallbackCtx.fillStyle = '#00bfff';
+                        fallbackCtx.beginPath();
+                        fallbackCtx.moveTo(200, 50);
+                        fallbackCtx.lineTo(300, 200);
+                        fallbackCtx.lineTo(200, 350);
+                        fallbackCtx.lineTo(100, 200);
+                        fallbackCtx.closePath();
+                        fallbackCtx.fill();
+                    } else if (asset.name === 'diamond1') {
+                        fallbackCtx.fillStyle = '#ff00ff';
+                        fallbackCtx.beginPath();
+                        fallbackCtx.moveTo(200, 50);
+                        fallbackCtx.lineTo(300, 200);
+                        fallbackCtx.lineTo(200, 350);
+                        fallbackCtx.lineTo(100, 200);
+                        fallbackCtx.closePath();
+                        fallbackCtx.fill();
+                    }
+                    
+                    assets[asset.name] = fallbackCanvas;
+                    assetLoaded();
+                };
+                img.src = asset.url;
+            });
+            
+            // Preload sounds
+            Object.keys(soundFiles).forEach(key => {
+                const audio = new Audio();
+                audio.oncanplaythrough = () => {
+                    sounds[key] = audio;
+                    if (key === 'background') {
+                        audio.loop = true;
+                    }
+                    assetLoaded();
+                };
+                audio.onerror = () => {
+                    console.error(`Failed to load sound: ${soundFiles[key]}`);
+                    assetLoaded();
+                };
+                audio.src = soundFiles[key];
+                audio.load();
+            });
+        }
+        
+        function assetLoaded() {
+            assetsLoaded++;
+            const progress = Math.floor((assetsLoaded / totalAssets) * 100);
+            loadingBar.style.width = `${progress}%`;
+            loadingText.textContent = `Loading assets... ${progress}%`;
+            
+            if (assetsLoaded >= totalAssets) {
+                // Show loading complete for a moment
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    gameContainer.style.display = 'block';
+                    
+                    // Play opening sound only once when game loads
+                    if (sounds.opening && soundEnabled && !openingSoundPlayed) {
+                        sounds.opening.play().catch(e => console.error("Opening sound play failed:", e));
+                        openingSoundPlayed = true;
+                    }
+                    
+                    // If road image is loaded, start the menu animation
+                    if (assets.roadImage) {
+                        requestAnimationFrame(scrollRoadMenu);
+                    }
+                }, 500);
+            }
+        }
+
+        // Game Initialization
+        function init() {
+            resizeGame();
+            window.addEventListener('resize', resizeGame);
+            
+            // Start menu animation if road image is already loaded
+            if (assets.roadImage && assets.roadImage.complete) {
+                requestAnimationFrame(scrollRoadMenu);
+            }
+
+            // Controls
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame);
+            
+            // Speed controls
+            speedUpButton.addEventListener('click', () => adjustSpeed(0.5));
+            speedDownButton.addEventListener('click', () => adjustSpeed(-0.5));
+            
+            // Sound toggle
+            soundToggle.addEventListener('click', toggleSound);
+            
+            // Touch events for speed controls
+            speedUpButton.addEventListener('touchstart', (e) => { e.preventDefault(); adjustSpeed(0.5); });
+            speedDownButton.addEventListener('touchstart', (e) => { e.preventDefault(); adjustSpeed(-0.5); });
+
+            // Mouse Controls
+            leftButton.addEventListener('mousedown', () => player.dx = -player.speed * speedMultiplier);
+            rightButton.addEventListener('mousedown', () => player.dx = player.speed * speedMultiplier);
+            leftButton.addEventListener('mouseup', () => player.dx = 0);
+            rightButton.addEventListener('mouseup', () => player.dx = 0);
+            
+            // Touch Controls
+            leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); player.dx = -player.speed * speedMultiplier; });
+            rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); player.dx = player.speed * speedMultiplier; });
+            leftButton.addEventListener('touchend', (e) => { e.preventDefault(); player.dx = 0; });
+            rightButton.addEventListener('touchend', (e) => { e.preventDefault(); player.dx = 0; });
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            soundToggle.textContent = soundEnabled ? "🔊 Sound On" : "🔇 Sound Off";
+            
+            if (gameState === 'playing') {
+                if (soundEnabled) {
+                    if (sounds.background) {
+                        sounds.background.play().catch(e => console.error("BG sound play failed:", e));
+                    }
+                } else {
+                    if (sounds.background) {
+                        sounds.background.pause();
+                    }
+                }
+            }
+        }
+
+        function adjustSpeed(change) {
+            speedMultiplier = Math.max(minSpeedMultiplier, Math.min(maxSpeedMultiplier, speedMultiplier + change));
+            gameSpeed = 3 * speedMultiplier;
+            speedDisplay.textContent = `Speed: ${speedMultiplier.toFixed(1)}x`;
+            
+            // Update player movement speed based on speed multiplier
+            if (player.dx !== 0) {
+                player.dx = Math.sign(player.dx) * player.speed * speedMultiplier;
+            }
+        }
+
+        function resizeGame() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (gameState === 'playing' || !playerCar) {
+                 setupPlayer();
+            }
+            updatePlayerPosition();
+        }
+        
+        function setupPlayer() {
+            if (!playerCar) {
+                playerCar = document.createElement('img');
+                playerCar.src = assets.playerCar ? assets.playerCar.src : 'player_car.png';
+                playerCar.id = 'playerCar';
+                playerCar.className = 'gameObject';
+                gameObjectContainer.appendChild(playerCar);
+            }
+            player.width = canvas.width * 0.15;
+            player.height = player.width * 1.8;
+            playerCar.style.width = `${player.width}px`;
+            playerCar.style.height = `${player.height}px`;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - player.height / 2 - 20;
+            const scale = canvas.width / conceptualWidth;
+            leftBoundary = (conceptualWidth * 0.20) * scale;
+            rightBoundary = (conceptualWidth * 0.80) * scale;
+        }
+
+        function showNotification(text) {
+            notification.textContent = text;
+            notification.style.opacity = '1';
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Game State Management
+        function startGame() {
+            resetGame();
+            gameState = 'playing';
+            menuScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            
+            if (sounds.background && soundEnabled) {
+                sounds.background.currentTime = 0; 
+                sounds.background.play().catch(e => console.error("BG sound play failed:", e));
+            }
+            
+            cancelAnimationFrame(gameLoopId);
+            gameLoop();
+        }
+
+        function endGame() {
+            gameState = 'gameOver';
+            if (sounds.background) sounds.background.pause();
+            if (sounds.hit && soundEnabled) {
+                sounds.hit.currentTime = 0;
+                sounds.hit.play().catch(e => console.error("Hit sound play failed:", e));
+            }
+            
+            finalScore.textContent = score;
+            gameOverScreen.style.display = 'flex';
+            cancelAnimationFrame(gameLoopId);
+        }
+
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            scoreDisplay.textContent = 'Score: 0';
+            livesCount.textContent = '3';
+            
+            // Clear all game objects
+            obstacles.forEach(obs => obs.element.remove());
+            coins.forEach(coin => coin.element.remove());
+            livesArray.forEach(life => life.element.remove());
+            diamonds.forEach(diamond => diamond.element.remove());
+            diamonds1.forEach(diamond1 => diamond1.element.remove());
+            
+            obstacles = [];
+            coins = [];
+            livesArray = [];
+            diamonds = [];
+            diamonds1 = [];
+            
+            // Reset player position
+            player.x = canvas.width / 2;
+            player.y = canvas.height - player.height / 2 - 20;
+            updatePlayerPosition();
+            
+            player.dx = 0;
+            nextObstacleSpawn = 0;
+            nextCoinSpawn = 0;
+            nextLifeSpawn = 0;
+            nextDiamondSpawn = 0;
+            nextDiamond1Spawn = 0;
+            
+            // Reset speed to default
+            speedMultiplier = 1;
+            gameSpeed = 3;
+            speedDisplay.textContent = 'Speed: 1.0x';
+        }
+
+        // --- Game Loop ---
+        function gameLoop(timestamp) {
+            if (gameState !== 'playing') return;
+            drawBackground();
+            updatePlayerPosition();
+            
+            // Spawn obstacles
+            if (timestamp > nextObstacleSpawn) {
+                spawnObstacle();
+                nextObstacleSpawn = timestamp + Math.random() * 1500 + 1000;
+            }
+            
+            // Spawn coins
+            if (timestamp > nextCoinSpawn) {
+                spawnCoin();
+                nextCoinSpawn = timestamp + Math.random() * 2000 + 1500;
+            }
+            
+            // Spawn life (rare - every 100 score)
+            if (score >= 100 && timestamp > nextLifeSpawn) {
+                spawnLife();
+                nextLifeSpawn = timestamp + 10000; // 10 seconds between life spawns
+            }
+            
+            // Spawn diamond (every 50 score)
+            if (score >= 50 && timestamp > nextDiamondSpawn) {
+                spawnDiamond();
+                nextDiamondSpawn = timestamp + 8000; // 8 seconds between diamond spawns
+            }
+            
+            // Spawn diamond1 (every 100 score)
+            if (score >= 100 && timestamp > nextDiamond1Spawn) {
+                spawnDiamond1();
+                nextDiamond1Spawn = timestamp + 12000; // 12 seconds between diamond1 spawns
+            }
+            
+            updateObjects(obstacles, gameSpeed);
+            updateObjects(coins, gameSpeed);
+            updateObjects(livesArray, gameSpeed);
+            updateObjects(diamonds, gameSpeed);
+            updateObjects(diamonds1, gameSpeed);
+            checkCollisions();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+        
+        function scrollRoadMenu() {
+            if (gameState !== 'menu') return;
+            drawBackground();
+            gameLoopId = requestAnimationFrame(scrollRoadMenu);
+        }
+
+        function drawBackground() {
+            roadY = (roadY + 3) % canvas.height; // Fixed speed for menu
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (assets.roadImage) {
+                ctx.drawImage(assets.roadImage, 0, roadY, canvas.width, canvas.height);
+                ctx.drawImage(assets.roadImage, 0, roadY - canvas.height, canvas.width, canvas.height);
+            } else {
+                // Fallback if image not loaded
+                ctx.fillStyle = '#333';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // Draw road lines
+                ctx.fillStyle = '#fff';
+                for (let i = 0; i < 8; i++) {
+                    ctx.fillRect(canvas.width/2 - 10, (i * 100 + roadY) % canvas.height, 20, 50);
+                }
+            }
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(0,0,0,0)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function spawnObstacle() {
+            const obstacleImg = document.createElement('img');
+            const carType = Math.floor(Math.random() * 4) + 1;
+            obstacleImg.src = assets[`obstacle${carType}`] ? assets[`obstacle${carType}`].src : `obstacle${carType}.png`;
+            obstacleImg.className = 'gameObject obstacle';
+            const obstacleWidth = player.width * 0.95;
+            const obstacleHeight = obstacleWidth * 1.8;
+            obstacleImg.style.width = `${obstacleWidth}px`;
+            obstacleImg.style.height = `${obstacleHeight}px`;
+            const obstacle = { element: obstacleImg, x: Math.random() * (rightBoundary - leftBoundary - obstacleWidth) + leftBoundary + (obstacleWidth / 2), y: -obstacleHeight, width: obstacleWidth, height: obstacleHeight };
+            gameObjectContainer.appendChild(obstacleImg);
+            obstacles.push(obstacle);
+        }
+
+        function spawnCoin() {
+            const coinImg = document.createElement('img');
+            coinImg.src = assets.coin ? assets.coin.src : 'coin.gif';
+            coinImg.className = 'gameObject coin';
+            const coinSize = 50;
+            coinImg.style.width = `${coinSize}px`;
+            coinImg.style.height = `${coinSize}px`;
+            const coin = { element: coinImg, x: Math.random() * (rightBoundary - leftBoundary - coinSize) + leftBoundary + coinSize / 2, y: -coinSize, width: coinSize, height: coinSize };
+            gameObjectContainer.appendChild(coinImg);
+            coins.push(coin);
+        }
+
+        function spawnLife() {
+            const lifeImg = document.createElement('img');
+            lifeImg.src = assets.life ? assets.life.src : 'Life.png';
+            lifeImg.className = 'gameObject life';
+            const lifeSize = 50;
+            lifeImg.style.width = `${lifeSize}px`;
+            lifeImg.style.height = `${lifeSize}px`;
+            const life = { element: lifeImg, x: Math.random() * (rightBoundary - leftBoundary - lifeSize) + leftBoundary + lifeSize / 2, y: -lifeSize, width: lifeSize, height: lifeSize };
+            gameObjectContainer.appendChild(lifeImg);
+            livesArray.push(life);
+        }
+
+        function spawnDiamond() {
+            const diamondImg = document.createElement('img');
+            diamondImg.src = assets.diamond ? assets.diamond.src : 'Dimond.png';
+            diamondImg.className = 'gameObject diamond';
+            const diamondSize = 50;
+            diamondImg.style.width = `${diamondSize}px`;
+            diamondImg.style.height = `${diamondSize}px`;
+            const diamond = { element: diamondImg, x: Math.random() * (rightBoundary - leftBoundary - diamondSize) + leftBoundary + diamondSize / 2, y: -diamondSize, width: diamondSize, height: diamondSize };
+            gameObjectContainer.appendChild(diamondImg);
+            diamonds.push(diamond);
+        }
+
+        function spawnDiamond1() {
+            const diamond1Img = document.createElement('img');
+            diamond1Img.src = assets.diamond1 ? assets.diamond1.src : 'Dimond1.png';
+            diamond1Img.className = 'gameObject diamond1';
+            const diamond1Size = 50;
+            diamond1Img.style.width = `${diamond1Size}px`;
+            diamond1Img.style.height = `${diamond1Size}px`;
+            const diamond1 = { element: diamond1Img, x: Math.random() * (rightBoundary - leftBoundary - diamond1Size) + leftBoundary + diamond1Size / 2, y: -diamond1Size, width: diamond1Size, height: diamond1Size };
+            gameObjectContainer.appendChild(diamond1Img);
+            diamonds1.push(diamond1);
+        }
+
+        function updatePlayerPosition() {
+            if (!playerCar) return;
+            player.x += player.dx;
+            if (player.x - player.width / 2 < leftBoundary) { player.x = leftBoundary + player.width / 2; }
+            if (player.x + player.width / 2 > rightBoundary) { player.x = rightBoundary - player.width / 2; }
+            playerCar.style.transform = `translate(${player.x - player.width/2}px, ${player.y - player.height/2}px)`;
+        }
+
+        function updateObjects(objectArray, speed) {
+            for (let i = objectArray.length - 1; i >= 0; i--) {
+                const obj = objectArray[i];
+                obj.y += speed;
+                if (obj.y - obj.height / 2 > canvas.height) {
+                    obj.element.remove();
+                    objectArray.splice(i, 1);
+                } else {
+                    obj.element.style.transform = `translate(${obj.x - obj.width/2}px, ${obj.y - obj.height/2}px)`;
+                }
+            }
+        }
+        
+        function checkCollisions() {
+            const playerRect = { left: player.x - player.width / 2, right: player.x + player.width / 2, top: player.y - player.height / 2, bottom: player.y + player.height / 2, centerX: player.x, };
+            
+            // Check for collisions with obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                const obstacleRect = { left: obstacle.x - obstacle.width / 2, right: obstacle.x + obstacle.width / 2, top: obstacle.y - obstacle.height / 2, bottom: obstacle.y + obstacle.height / 2 };
+                if (playerRect.left < obstacleRect.right && playerRect.right > obstacleRect.left && playerRect.top < obstacleRect.bottom && playerRect.bottom > obstacleRect.top) {
+                    if (lives > 1) {
+                        // Lose a life but continue playing
+                        lives--;
+                        livesCount.textContent = lives;
+                        showNotification("-1 Life!");
+                        if (sounds.hit && soundEnabled) {
+                            sounds.hit.currentTime = 0;
+                            sounds.hit.play().catch(e => console.error("Hit sound play failed:", e));
+                        }
+                    } else {
+                        // Game over
+                        endGame();
+                        return;
+                    }
+                    
+                    obstacle.element.remove();
+                    obstacles.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with coins
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                const coinRect = { left: coin.x - coin.width / 2, right: coin.x + coin.width / 2, top: coin.y - coin.height / 2, bottom: coin.y + coin.height / 2, };
+                if (playerRect.centerX > coinRect.left && playerRect.centerX < coinRect.right && playerRect.top < coinRect.bottom && playerRect.bottom > coinRect.top) {
+                    score += 5;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    if(sounds.collect && soundEnabled) {
+                        sounds.collect.currentTime = 0;
+                        sounds.collect.play().catch(e => console.error("Collect sound play failed:", e));
+                    }
+                    coin.element.remove();
+                    coins.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with life power-ups
+            for (let i = livesArray.length - 1; i >= 0; i--) {
+                const life = livesArray[i];
+                const lifeRect = { left: life.x - life.width / 2, right: life.x + life.width / 2, top: life.y - life.height / 2, bottom: life.y + life.height / 2, };
+                if (playerRect.centerX > lifeRect.left && playerRect.centerX < lifeRect.right && playerRect.top < lifeRect.bottom && playerRect.bottom > lifeRect.top) {
+                    lives++;
+                    livesCount.textContent = lives;
+                    showNotification("+1 Life!");
+                    if(sounds.life && soundEnabled) {
+                        sounds.life.currentTime = 0;
+                        sounds.life.play().catch(e => console.error("Life sound play failed:", e));
+                    }
+                    life.element.remove();
+                    livesArray.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with diamonds (20 points)
+            for (let i = diamonds.length - 1; i >= 0; i--) {
+                const diamond = diamonds[i];
+                const diamondRect = { left: diamond.x - diamond.width / 2, right: diamond.x + diamond.width / 2, top: diamond.y - diamond.height / 2, bottom: diamond.y + diamond.height / 2, };
+                if (playerRect.centerX > diamondRect.left && playerRect.centerX < diamondRect.right && playerRect.top < diamondRect.bottom && playerRect.bottom > diamondRect.top) {
+                    score += 20;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    showNotification("+20 Points!");
+                    if(sounds.diamond && soundEnabled) {
+                        sounds.diamond.currentTime = 0;
+                        sounds.diamond.play().catch(e => console.error("Diamond sound play failed:", e));
+                    }
+                    diamond.element.remove();
+                    diamonds.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with diamonds1 (100 points)
+            for (let i = diamonds1.length - 1; i >= 0; i--) {
+                const diamond1 = diamonds1[i];
+                const diamond1Rect = { left: diamond1.x - diamond1.width / 2, right: diamond1.x + diamond1.width / 2, top: diamond1.y - diamond1.height / 2, bottom: diamond1.y + diamond1.height / 2, };
+                if (playerRect.centerX > diamond1Rect.left && playerRect.centerX < diamond1Rect.right && playerRect.top < diamond1Rect.bottom && playerRect.bottom > diamond1Rect.top) {
+                    score += 100;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    showNotification("+100 Points!");
+                    if(sounds.diamond && soundEnabled) {
+                        sounds.diamond.currentTime = 0;
+                        sounds.diamond.play().catch(e => console.error("Diamond sound play failed:", e));
+                    }
+                    diamond1.element.remove();
+                    diamonds1.splice(i, 1);
+                }
+            }
+        }
+        
+        // Start the game loading process
+        preloadAssets();
+        // Initialize the game after a short delay to show loading screen
+        setTimeout(init, 500);
+    </script>
+
+</body>
+</html>
