@@ -14,7 +14,7 @@
         <!-- YAHAN APNI REAL ADMOB APP ID DALEN -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"/>
+            android:value="ca-app-pub-6302105448775587~3777252654"/>
         
         <activity
             android:name=".MainActivity"
