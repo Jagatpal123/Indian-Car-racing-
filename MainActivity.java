@@ -2,7 +2,7 @@ package com.jagatpal.carracing;
 
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
-import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -16,6 +16,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.rewarded.RewardItem;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,8 +35,6 @@ public class MainActivity extends AppCompatActivity {
 
         initializeAds();
         setupWebView();
-        loadInterstitialAd();
-        loadRewardedAd();
     }
 
     private void initializeAds() {
@@ -43,19 +42,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
                 Toast.makeText(MainActivity.this, "AdMob Initialized", Toast.LENGTH_SHORT).show();
+                loadInterstitialAd();
+                loadRewardedAd();
             }
         });
     }
 
     private void setupWebView() {
         webView = findViewById(R.id.webview);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setAllowFileAccess(true);
-        webView.getSettings().setAllowContentAccess(true);
         
-        webView.setWebViewClient(new WebViewClient());
-        webView.setWebChromeClient(new WebChromeClient());
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowContentAccess(true);
+        webSettings.setAllowUniversalAccessFromFileURLs(true);
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                Toast.makeText(MainActivity.this, "Game Ready!", Toast.LENGTH_SHORT).show();
+            }
+        });
         
         // JavaScript interface add karo
         webView.addJavascriptInterface(new WebAppInterface(), "Android");
@@ -64,90 +74,112 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadGameHTML() {
-        // Yahan aapka original game HTML code load hoga
-        webView.loadUrl("file:///android_asset/index.html");
+        webView.loadUrl("file:///android_asset/game.html");
     }
 
-    // INTERSTITIAL AD FOR RESTART BUTTON
+    // INTERSTITIAL AD LOAD
     private void loadInterstitialAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
         
         InterstitialAd.load(this, INTERSTITIAL_AD_UNIT_ID, adRequest,
             new InterstitialAdLoadCallback() {
                 @Override
-                public void onAdLoaded(InterstitialAd interstitialAd) {
-                    MainActivity.this.interstitialAd = interstitialAd;
-                    Toast.makeText(MainActivity.this, "Interstitial Ad Ready", Toast.LENGTH_SHORT).show();
+                public void onAdLoaded(InterstitialAd ad) {
+                    MainActivity.this.interstitialAd = ad;
                 }
 
                 @Override
                 public void onAdFailedToLoad(LoadAdError loadAdError) {
                     interstitialAd = null;
-                    Toast.makeText(MainActivity.this, "Interstitial Ad Failed", Toast.LENGTH_SHORT).show();
                 }
             });
     }
 
-    // REWARDED AD FOR GET LIVES BUTTON  
+    // REWARDED AD LOAD  
     private void loadRewardedAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
         
         RewardedAd.load(this, REWARDED_AD_UNIT_ID, adRequest,
             new RewardedAdLoadCallback() {
                 @Override
-                public void onAdLoaded(RewardedAd rewardedAd) {
-                    MainActivity.this.rewardedAd = rewardedAd;
-                    Toast.makeText(MainActivity.this, "Rewarded Ad Ready", Toast.LENGTH_SHORT).show();
+                public void onAdLoaded(RewardedAd ad) {
+                    MainActivity.this.rewardedAd = ad;
                 }
 
                 @Override
                 public void onAdFailedToLoad(LoadAdError loadAdError) {
                     rewardedAd = null;
-                    Toast.makeText(MainActivity.this, "Rewarded Ad Failed", Toast.LENGTH_SHORT).show();
                 }
             });
     }
 
     // INTERSTITIAL AD SHOW KARNE KA FUNCTION
     public void showInterstitialAd() {
-        if (interstitialAd != null) {
-            interstitialAd.show(this);
-            // Next ad load karo
-            loadInterstitialAd();
-        } else {
-            // Agar ad ready nahi hai to direct restart
-            webView.loadUrl("javascript:closeAdAndRestart()");
-            loadInterstitialAd(); // Phir se try karo
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (interstitialAd != null) {
+                    interstitialAd.show(MainActivity.this);
+                    // Next ad load karo
+                    loadInterstitialAd();
+                } else {
+                    // Agar ad ready nahi hai to direct restart
+                    webView.loadUrl("javascript:closeAdAndRestart()");
+                    loadInterstitialAd(); // Phir se try karo
+                }
+            }
+        });
     }
 
     // REWARDED AD SHOW KARNE KA FUNCTION
     public void showRewardedAd() {
-        if (rewardedAd != null) {
-            rewardedAd.show(this, rewardItem -> {
-                // Reward mil gaya - 3 lives dena
-                webView.loadUrl("javascript:giveLivesReward()");
-                Toast.makeText(MainActivity.this, "🎉 You got 3 lives!", Toast.LENGTH_SHORT).show();
-            });
-            // Next ad load karo
-            loadRewardedAd();
-        } else {
-            // Agar ad ready nahi hai to message show karo
-            Toast.makeText(this, "Ad not ready yet. Please try again.", Toast.LENGTH_SHORT).show();
-            loadRewardedAd(); // Phir se try karo
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (rewardedAd != null) {
+                    rewardedAd.show(MainActivity.this, new com.google.android.gms.ads.OnUserEarnedRewardListener() {
+                        @Override
+                        public void onUserEarnedReward(RewardItem rewardItem) {
+                            // Reward mil gaya - 3 lives dena
+                            webView.loadUrl("javascript:giveLivesReward()");
+                            Toast.makeText(MainActivity.this, "🎉 You got 3 lives!", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    // Next ad load karo
+                    loadRewardedAd();
+                } else {
+                    // Agar ad ready nahi hai to message show karo
+                    Toast.makeText(MainActivity.this, "Ad loading... Please try again.", Toast.LENGTH_SHORT).show();
+                    loadRewardedAd(); // Phir se try karo
+                }
+            }
+        });
     }
 
     // JavaScript Interface - WebView se communicate karne ke liye
     public class WebAppInterface {
         @JavascriptInterface
         public void showInterstitialAd() {
-            runOnUiThread(() -> MainActivity.this.showInterstitialAd());
+            MainActivity.this.showInterstitialAd();
         }
 
         @JavascriptInterface
         public void showRewardedAd() {
-            runOnUiThread(() -> MainActivity.this.showRewardedAd());
+            MainActivity.this.showRewardedAd();
+        }
+        
+        @JavascriptInterface
+        public void showToast(String message) {
+            Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
         }
     }
 
