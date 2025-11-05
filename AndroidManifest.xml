@@ -4,22 +4,32 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Car Racing Game"
-        android:theme="@style/Theme.CarRacingGame">
+        android:theme="@style/Theme.CarRacingGame"
+        android:usesCleartextTraffic="true">
         
         <!-- YAHAN APNI REAL ADMOB APP ID DALEN -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-6302105448775587~3777252654"/>
         
+        <!-- AD ACTIVITY FOR FULLSCREEN ADS - ADDED -->
+        <activity
+            android:name="com.google.android.gms.ads.AdActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"/>
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.CarRacingGame">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
