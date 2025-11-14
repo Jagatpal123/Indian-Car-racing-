@@ -1,11 +1,11 @@
 // sw.js - Service Worker for Offline Capability
-const CACHE_NAME = 'car-racing-game-v4'; // <<< FIX: Increased version to force an update
+const CACHE_NAME = 'car-racing-game-v5'; // Version increased for forced update
 
-// IMPORTANT: Add manifest.json to the list
+// Ensure all assets, including manifest, are listed here
 const urlsToCache = [
   './',
-  './index.html',
-  './manifest.json', // <<< FIX: manifest.json added
+  './game.html', // Note: Renamed from index.html to game.html in the main activity logic
+  './manifest.json', 
   'road.jpg',
   'player_car.png',
   'obstacle1.png',
@@ -31,7 +31,8 @@ self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
-        return cache.addAll(urlsToCache);
+        // We use 'game.html' here to match the android asset name
+        return cache.addAll(urlsToCache.map(url => url === './index.html' ? './game.html' : url));
       })
       .catch(function(error) {
         console.error('[Service Worker] Cache addAll failed:', error);
@@ -59,7 +60,7 @@ self.addEventListener('activate', function(event) {
   return self.clients.claim();
 });
 
-// Fetch event - serve from cache if available (Network-first strategy is safer for ads/updates, but cache-first is fine for offline games)
+// Fetch event - serve from cache if available
 self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
