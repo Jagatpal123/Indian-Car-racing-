@@ -9,16 +9,14 @@
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Car Racing Game"
+        android:label="@string/app_name"
         android:theme="@style/Theme.CarRacingGame"
         android:usesCleartextTraffic="true">
         
-        <!-- YAHAN APNI REAL ADMOB APP ID DALEN -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-6302105448775587~3777252654"/>
         
-        <!-- AD ACTIVITY FOR FULLSCREEN ADS - ADDED -->
         <activity
             android:name="com.google.android.gms.ads.AdActivity"
             android:exported="false"
