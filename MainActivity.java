@@ -7,6 +7,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
@@ -24,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private InterstitialAd interstitialAd;
     private RewardedAd rewardedAd;
 
-    // YAHAN APNI IDs DALI HAIN
+    // आपके Ad Unit IDs
     private final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-6302105448775587/5186924288";
     private final String REWARDED_AD_UNIT_ID = "ca-app-pub-6302105448775587/1000907894";
 
@@ -41,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
-                Toast.makeText(MainActivity.this, "AdMob Initialized", Toast.LENGTH_SHORT).show();
+                // AdMob Initialized होने पर Toast हटा दिया, ताकि गेम जल्दी शुरू हो
                 loadInterstitialAd();
                 loadRewardedAd();
             }
@@ -57,23 +58,25 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setDatabaseEnabled(true);
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
+        // ये सेटिंग्स Android 10+ (API 29+) पर काम नहीं करेंगी, लेकिन पुराने वर्ज़न के लिए ज़रूरी हैं
         webSettings.setAllowUniversalAccessFromFileURLs(true);
         webSettings.setAllowFileAccessFromFileURLs(true);
         
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
-                Toast.makeText(MainActivity.this, "Game Ready!", Toast.LENGTH_SHORT).show();
+                // Game Ready Toast हटा दिया
             }
         });
         
-        // JavaScript interface add karo
+        // JavaScript interface को 'Android' नाम से जोड़ें - यह महत्वपूर्ण है!
         webView.addJavascriptInterface(new WebAppInterface(), "Android");
         
         loadGameHTML();
     }
 
     private void loadGameHTML() {
+        // सुनिश्चित करें कि आपकी HTML फ़ाइल assets फ़ोल्डर में game.html के नाम से है
         webView.loadUrl("file:///android_asset/game.html");
     }
 
@@ -91,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onAdFailedToLoad(LoadAdError loadAdError) {
                     interstitialAd = null;
+                    // Ad Load Fail होने पर, सीधे JavaScript को बताएं कि ad नहीं दिखा सकते
+                    webView.loadUrl("javascript:closeAdAndRestart()"); 
                 }
             });
     }
@@ -109,21 +114,23 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onAdFailedToLoad(LoadAdError loadAdError) {
                     rewardedAd = null;
+                    // Ad Load Fail होने पर, Toast से बताएं
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Reward Ad failed to load. Try again.", Toast.LENGTH_SHORT).show());
                 }
             });
     }
 
-    // INTERSTITIAL AD SHOW KARNE KA FUNCTION
+    // INTERSTITIAL AD SHOW KARNE KA FUNCTION (Called from JavaScript)
     public void showInterstitialAd() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (interstitialAd != null) {
                     interstitialAd.show(MainActivity.this);
-                    // Next ad load karo
+                    // Next ad load करो
                     loadInterstitialAd();
                 } else {
-                    // Agar ad ready nahi hai to direct restart
+                    // Agar ad ready nahi hai to direct restart (JavaScript function)
                     webView.loadUrl("javascript:closeAdAndRestart()");
                     loadInterstitialAd(); // Phir se try karo
                 }
@@ -131,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // REWARDED AD SHOW KARNE KA FUNCTION
+    // REWARDED AD SHOW KARNE KA FUNCTION (Called from JavaScript)
     public void showRewardedAd() {
         runOnUiThread(new Runnable() {
             @Override
@@ -140,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
                     rewardedAd.show(MainActivity.this, new com.google.android.gms.ads.OnUserEarnedRewardListener() {
                         @Override
                         public void onUserEarnedReward(RewardItem rewardItem) {
-                            // Reward mil gaya - 3 lives dena
+                            // Reward mil gaya - JavaScript function call करो
                             webView.loadUrl("javascript:giveLivesReward()");
                             Toast.makeText(MainActivity.this, "🎉 You got 3 lives!", Toast.LENGTH_LONG).show();
                         }
@@ -156,8 +163,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // JavaScript Interface - WebView se communicate karne ke liye
+    // JavaScript Interface - WebView से communicate करने के लिए
     public class WebAppInterface {
+        
         @JavascriptInterface
         public void showInterstitialAd() {
             MainActivity.this.showInterstitialAd();
@@ -176,17 +184,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
+        // Back Button Press होने पर JavaScript को बताएं
+        webView.loadUrl("javascript:onAndroidBackPress()");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Resume pe ads phir se load karo
+        // सुनिश्चित करें कि onResume पर ad re-load हों (null होने पर)
         if (interstitialAd == null) {
             loadInterstitialAd();
         }
