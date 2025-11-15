@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Racing Game</title>
+    <meta name="theme-color" content="#ff4500">
+    <meta name="description" content="Exciting Car Racing Game - Play anytime!">
+    <style>
+        /* Your existing CSS styles remain exactly the same */
+        /* General Setup */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            font-family: 'Arial', sans-serif;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #loadingLogo {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff0000, #ff9900);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+        
+        #loadingBarContainer {
+            width: 250px;
+            height: 15px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #loadingBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #ff0000, #ff9900);
+            transition: width 0.3s;
+        }
+        
+        #loadingText {
+            color: white;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        /* Game Container */
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: none;
+        }
+
+        /* Canvas for Background */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Container for Moving Objects */
+        #gameObjectContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Game Objects */
+        .gameObject {
+            position: absolute;
+            transform: translate(-50%, -50%); 
+        }
+
+        #playerCar { z-index: 4; }
+        .obstacle { z-index: 3; }
+        .coin { z-index: 2; }
+        .life { z-index: 2; }
+        .diamond { z-index: 2; }
+        .diamond1 { z-index: 2; }
+
+        /* UI Elements */
+        #scoreBox {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 2px 2px 4px #000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            min-width: 140px;
+            backdrop-filter: blur(8px);
+        }
+        
+        #livesContainer {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            justify-content: space-between;
+        }
+        
+        #livesCount {
+            font-size: 1em;
+            font-weight: bold;
+            color: #ff5252;
+        }
+        
+        .life-icon {
+            width: 18px;
+            height: 18px;
+            background-color: #ff5252;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center;
+        }
+        
+        #scoreDisplay {
+            font-size: 1em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        /* Get Lives Button */
+        #getLivesButton {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            z-index: 101;
+            position: relative;
+            width: 100%;
+            min-height: 36px;
+            display: block;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        #getLivesButton:hover {
+            background: linear-gradient(45deg, #45a049, #4CAF50);
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        #getLivesButton:active {
+            transform: scale(0.98);
+        }
+
+        /* Speed Controls */
+        #speedControls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 2px 2px 4px #000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 140px;
+            backdrop-filter: blur(8px);
+        }
+        
+        #speedDisplay {
+            font-size: 1em;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .speedButton {
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 1.5em;
+            font-weight: 900;
+            user-select: none;
+            transition: transform 0.1s;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .speedButton:active {
+            transform: scale(0.9);
+        }
+        
+        #speedUp { 
+            color: #4CAF50; 
+            background: rgba(76, 175, 80, 0.3);
+        }
+        
+        #speedDown { 
+            color: #F44336; 
+            background: rgba(244, 67, 54, 0.3);
+        }
+
+        /* Controls - FIXED ARROWS */
+        .controlButton {
+            position: fixed;
+            bottom: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            font-size: 2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #leftButton { 
+            left: 20px; 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+        
+        #rightButton { 
+            right: 20px; 
+            background: linear-gradient(135deg, #4834d4, #686de0);
+        }
+        
+        .controlButton:active {
+            transform: scale(0.95);
+        }
+
+        /* Game State Screens */
+        .gameScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+            text-align: center;
+        }
+        
+        #menuScreen {
+            background: rgba(0,0,0,0.3);
+        }
+
+        #gameOverScreen {
+            background: rgba(0,0,0,0.7);
+            display: none;
+        }
+
+        #featuresScreen {
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .gameTitle {
+            font-size: 3.5em;
+            text-shadow: 5px 5px 10px #000;
+            margin-bottom: 30px;
+        }
+        
+        .action-button {
+            padding: 20px 40px;
+            font-size: 1.8em;
+            color: white;
+            border: 3px solid #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            margin: 15px 0;
+            background: #ff4500;
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+            width: 80%;
+            max-width: 350px;
+        }
+
+        .menu-button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            color: white;
+            background: #007bff;
+            border: 2px solid #fff;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            width: 70%;
+            max-width: 300px;
+        }
+
+        .menu-button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .gameOverText {
+            font-size: 4em;
+            color: #ff0000;
+            text-shadow: 3px 3px 10px #000;
+        }
+        
+        /* Sound Toggle */
+        #soundToggle {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            z-index: 25;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        /* Exit Popup Styles */
+        #exitPopup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .popup-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.6);
+            border: 4px solid #ffd700;
+            max-width: 400px;
+            width: 85%;
+            animation: popupAppear 0.4s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .popup-content::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes popupAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.7) translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .popup-emoji {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .popup-title {
+            color: #fff;
+            font-size: 2.2em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+
+        .popup-message {
+            color: #fff;
+            font-size: 1.4em;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .popup-btn {
+            padding: 15px 35px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            min-width: 120px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .popup-btn-yes {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .popup-btn-yes:hover {
+            background: linear-gradient(45deg, #ff5252, #e74c3c);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .popup-btn-no {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .popup-btn-no:hover {
+            background: linear-gradient(45deg, #45a049, #2ecc71);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);
+        }
+
+        .popup-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Features Screen Styles */
+        .features-container {
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(255, 69, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .back-arrow {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 3em;
+            color: #ffd700;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            z-index: 30;
+        }
+
+        .back-arrow:hover {
+            transform: scale(1.2);
+        }
+
+        .features-title {
+            font-size: 3em;
+            color: #ff4500;
+            text-shadow: 3px 3px 6px #000;
+            margin-bottom: 30px;
+        }
+
+        .feature-category {
+            margin: 25px 0;
+            text-align: left;
+        }
+
+        .feature-category h3 {
+            color: #ff9900;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px #000;
+            border-bottom: 2px solid #ff9900;
+            padding-bottom: 5px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ff4500;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateX(10px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .feature-item h4 {
+            color: #ffd700;
+            font-size: 1.3em;
+            margin: 0 0 8px 0;
+        }
+
+        .feature-item p {
+            color: #ccc;
+            margin: 0;
+            font-size: 1.em;
+            line-height: 1.4;
+        }
+
+        .feature-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .back-button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            color: white;
+            background: #333;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        /* Rate Us Button */
+        .rate-button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            color: white;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 70%;
+            max-width: 300px;
+        }
+
+        .rate-button:hover {
+            background: linear-gradient(45deg, #FFA500, #FF8C00);
+            transform: scale(1.05);
+        }
+
+        .stars {
+            display: flex;
+            gap: 5px;
+        }
+
+        .star {
+            color: #FFD700;
+            font-size: 1.2em;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .gameTitle {
+                font-size: 2.8em;
+            }
+            
+            .action-button {
+                font-size: 1.5em;
+                padding: 18px 35px;
+            }
+            
+            .menu-button, .rate-button {
+                font-size: 1.3em;
+                padding: 15px 30px;
+            }
+
+            #scoreBox, #speedControls {
+                min-width: 130px;
+                padding: 10px;
+            }
+
+            .speedButton {
+                width: 40px;
+                height: 40px;
+                font-size: 1.3em;
+            }
+
+            .controlButton {
+                width: 65px;
+                height: 65px;
+                font-size: 1.8em;
+            }
+
+            .features-title {
+                font-size: 2.5em;
+            }
+
+            .popup-content {
+                padding: 30px 20px;
+                max-width: 350px;
+            }
+
+            .popup-emoji {
+                font-size: 3.5em;
+            }
+
+            .popup-title {
+                font-size: 2em;
+            }
+
+            .popup-message {
+                font-size: 1.2em;
+            }
+
+            .popup-btn {
+                padding: 12px 25px;
+                font-size: 1.1em;
+                min-width: 100px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gameTitle {
+                font-size: 2.2em;
+            }
+            
+            .action-button {
+                font-size: 1.3em;
+                padding: 15px 30px;
+            }
+            
+            .menu-button, .rate-button {
+                font-size: 1.1em;
+                padding: 12px 25px;
+            }
+
+            #scoreBox, #speedControls {
+                min-width: 120px;
+                padding: 8px;
+                font-size: 0.9em;
+            }
+
+            #getLivesButton {
+                padding: 6px 8px;
+                font-size: 0.8em;
+                min-height: 32px;
+            }
+
+            .speedButton {
+                width: 35px;
+                height: 35px;
+                font-size: 1.1em;
+            }
+
+            .controlButton {
+                width: 60px;
+                height: 60px;
+                font-size: 1.6em;
+                bottom: 15px;
+            }
+
+            .features-title {
+                font-size: 2em;
+            }
+
+            .popup-content {
+                padding: 25px 15px;
+                max-width: 300px;
+            }
+
+            .popup-emoji {
+                font-size: 3em;
+            }
+
+            .popup-title {
+                font-size: 1.8em;
+            }
+
+            .popup-message {
+                font-size: 1.1em;
+            }
+
+            .popup-btn {
+                padding: 10px 20px;
+                font-size: 1em;
+                min-width: 90px;
+            }
+
+            .popup-buttons {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingScreen">
+        <div id="loadingLogo">CAR RACING</div>
+        <div id="loadingBarContainer">
+            <div id="loadingBar"></div>
+        </div>
+        <div id="loadingText">Loading... 0%</div>
+    </div>
+
+    <!-- Exit Popup -->
+    <div id="exitPopup">
+        <div class="popup-content">
+            <div class="popup-emoji">🎮</div>
+            <div class="popup-title">Hello My Good Player! 🚗</div>
+            <div class="popup-message">Are you want to exit this game?</div>
+            <div class="popup-buttons">
+                <button id="exitYes" class="popup-btn popup-btn-yes">Yes</button>
+                <button id="exitNo" class="popup-btn popup-btn-no">No</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameObjectContainer"></div>
+        
+        <!-- SCORE BOX WITH GET LIVES BUTTON -->
+        <div id="scoreBox">
+            <div id="livesContainer">
+                <div class="life-icon"></div>
+                <span id="livesCount">3</span>
+            </div>
+            <div id="scoreDisplay">Score: 0</div>
+            <button id="getLivesButton">Get 3 Lives</button>
+        </div>
+        
+        <!-- SPEED CONTROLS -->
+        <div id="speedControls">
+            <div id="speedDisplay">Speed: 1.0x</div>
+            <div style="display: flex;">
+                <div id="speedUp" class="speedButton">+</div>
+                <div id="speedDown" class="speedButton">-</div>
+            </div>
+        </div>
+        
+        <!-- CONTROL BUTTONS WITH ARROWS -->
+        <div id="leftButton" class="controlButton">←</div>
+        <div id="rightButton" class="controlButton">→</div>
+        
+        <div id="soundToggle">Sound On</div>
+
+        <div id="menuScreen" class="gameScreen">
+            <h1 class="gameTitle">Car Racing</h1>
+            <div class="menu-buttons">
+                <button id="startButton" class="action-button">Let's Start</button>
+                <button id="featuresButton" class="menu-button">Features</button>
+                <button id="rateButton" class="rate-button">
+                    <span>Rate Us</span>
+                    <div class="stars">
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- FEATURES SCREEN -->
+        <div id="featuresScreen" class="gameScreen">
+            <div class="features-container">
+                <div class="back-arrow" id="featuresBackArrow">←</div>
+                <h1 class="features-title">GAME FEATURES</h1>
+                <div class="feature-category">
+                    <h3>Gameplay Features</h3>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">🎮</span> Smooth Car Control</h4>
+                        <p>Responsive touch and mouse controls for precise car movement</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">⚡</span> Dynamic Speed System</h4>
+                        <p>Adjustable game speed from 0.5x to 3.0x for different challenge levels</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">🛣️</span> Multiple Lane System</h4>
+                        <p>Realistic road boundaries with proper lane management</p>
+                    </div>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Collectible Items</h3>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">🪙</span> Gold Coins</h4>
+                        <p>Collect coins for +5 points each</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">💎</span> Blue Diamonds</h4>
+                        <p>Rare diamonds worth +20 points</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">❤️</span> Life Power-ups</h4>
+                        <p>Heart items that give you +1 extra life</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">💎</span> Pink Diamonds</h4>
+                        <p>Ultra-rare diamonds worth +100 points!</p>
+                    </div>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Audio Experience</h3>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">🎵</span> Immersive Soundtrack</h4>
+                        <p>Background music and realistic sound effects</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4><span class="feature-icon">🔊</span> Custom Sound Toggle</h4>
+                        <p>Enable/disable sounds based on your preference</p>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Different Obstacles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">5</div>
+                        <div class="stat-label">Collectible Types</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">3.0x</div>
+                        <div class="stat-label">Max Speed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">∞</div>
+                        <div class="stat-label">Replay Value</div>
+                    </div>
+                </div>
+            </div>
+            <button id="backButton" class="back-button">Back to Menu</button>
+        </div>
+        
+        <div id="gameOverScreen" class="gameScreen">
+            <h1 class="gameOverText">GAME OVER</h1>
+            <div style="font-size: 1.8em; margin-bottom: 20px;">Final Score: <span id="finalScore">0</span></div>
+            <button id="restartGameButton" class="action-button">Play Again</button>
+        </div>
+        
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingBar = document.getElementById('loadingBar');
+        const loadingText = document.getElementById('loadingText');
+        const gameContainer = document.getElementById('gameContainer');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameObjectContainer = document.getElementById('gameObjectContainer');
+        const scoreBox = document.getElementById('scoreBox');
+        const livesCount = document.getElementById('livesCount');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const getLivesButton = document.getElementById('getLivesButton');
+        const leftButton = document.getElementById('leftButton');
+        const rightButton = document.getElementById('rightButton');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const featuresScreen = document.getElementById('featuresScreen');
+        const finalScore = document.getElementById('finalScore');
+        const startButton = document.getElementById('startButton');
+        const restartGameButton = document.getElementById('restartGameButton');
+        const featuresButton = document.getElementById('featuresButton');
+        const backButton = document.getElementById('backButton');
+        const featuresBackArrow = document.getElementById('featuresBackArrow');
+        const rateButton = document.getElementById('rateButton');
+        const speedUpButton = document.getElementById('speedUp');
+        const speedDownButton = document.getElementById('speedDown');
+        const speedDisplay = document.getElementById('speedDisplay');
+        const soundToggle = document.getElementById('soundToggle');
+        const notification = document.getElementById('notification');
+        const exitPopup = document.getElementById('exitPopup');
+        const exitYes = document.getElementById('exitYes');
+        const exitNo = document.getElementById('exitNo');
+
+        // Game State & Settings
+        let gameState = 'menu';
+        let score = 0;
+        let lives = 3;
+        let gameLoopId;
+        let roadY = 0;
+        let soundEnabled = true;
+        let gamePaused = false;
+        
+        // Player properties - INCREASED BASE SPEED
+        let playerCar;
+        let player = { x: 0, y: 0, width: 0, height: 0, speed: 8, dx: 0 };
+
+        // Speed system - INCREASED BASE GAME SPEED
+        let gameSpeed = 5;
+        let speedMultiplier = 1;
+        const maxSpeedMultiplier = 3;
+        const minSpeedMultiplier = 0.5;
+        
+        // Road boundaries
+        const conceptualWidth = 400;
+        let leftBoundary = conceptualWidth * 0.20; 
+        let rightBoundary = conceptualWidth * 0.80;
+        
+        // Game objects arrays
+        let obstacles = [];
+        let coins = [];
+        let livesArray = [];
+        let diamonds = [];
+        let diamonds1 = [];
+        let nextObstacleSpawn = 0;
+        let nextCoinSpawn = 0;
+        let nextLifeSpawn = 0;
+        let nextDiamondSpawn = 0;
+        let nextDiamond1Spawn = 0;
+
+        // Life power-up tracking
+        let lastLifeSpawnScore = 0;
+
+        // Asset URLs - YOUR ORIGINAL ASSETS
+        const assetUrls = {
+            roadImage: 'road.jpg',
+            playerCar: 'player_car.png',
+            obstacle1: 'obstacle1.png',
+            obstacle2: 'obstacle2.png',
+            obstacle3: 'obstacle3.png',
+            obstacle4: 'obstacle4.png',
+            coin: 'coin.gif',
+            life: 'Life.png',
+            diamond: 'Dimond.png',
+            diamond1: 'Dimond1.png'
+        };
+
+        // Game assets
+        const assets = {};
+        let assetsLoaded = 0;
+        const totalAssets = Object.keys(assetUrls).length;
+
+        // Sound system - YOUR ORIGINAL SOUNDS
+        const sounds = {
+            background: new Audio(),
+            hit: new Audio(),
+            collect: new Audio(),
+            life: new Audio(),
+            diamond: new Audio(),
+            diamond1: new Audio()
+        };
+
+        const soundUrls = {
+            background: 'carsound.mp3',
+            hit: 'carhit.mp3',
+            collect: 'collect.wav',
+            life: 'Life.mp3',
+            diamond: 'Dimond.mp3',
+            diamond1: 'Dimond1.mp3'
+        };
+
+        // Preload all assets
+        function preloadAssets() {
+            // Load images
+            Object.keys(assetUrls).forEach(assetName => {
+                const img = new Image();
+                img.onload = () => {
+                    assets[assetName] = img;
+                    assetLoaded();
+                };
+                img.onerror = () => {
+                    console.warn(`Failed to load: ${assetUrls[assetName]}, using fallback`);
+                    createFallbackAsset(assetName);
+                    assetLoaded();
+                };
+                img.src = assetUrls[assetName];
+            });
+
+            // Load sounds
+            Object.keys(soundUrls).forEach(soundName => {
+                const audio = sounds[soundName];
+                audio.oncanplaythrough = () => {
+                    assetLoaded();
+                };
+                audio.onerror = () => {
+                    console.warn(`Failed to load sound: ${soundUrls[soundName]}`);
+                    assetLoaded();
+                };
+                audio.src = soundUrls[soundName];
+                audio.load();
+                
+                // Set loop for background music
+                if (soundName === 'background') {
+                    audio.loop = true;
+                }
+            });
+        }
+
+        // Create fallback assets if loading fails
+        function createFallbackAsset(assetName) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (assetName === 'roadImage') {
+                canvas.width = 400;
+                canvas.height = 800;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(0, 0, 400, 800);
+                ctx.fillStyle = '#fff';
+                for (let i = 0; i < 8; i++) {
+                    ctx.fillRect(190, i * 100, 20, 50);
+                }
+            } else if (assetName === 'playerCar') {
+                canvas.width = 100;
+                canvas.height = 180;
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(10, 30, 80, 120);
+                ctx.fillStyle = 'lightblue';
+                ctx.fillRect(20, 40, 60, 40);
+                ctx.fillRect(20, 100, 60, 40);
+            } else if (assetName.startsWith('obstacle')) {
+                canvas.width = 100;
+                canvas.height = 180;
+                const colors = ['red', 'green', 'yellow', 'purple'];
+                const index = parseInt(assetName.replace('obstacle', '')) - 1;
+                ctx.fillStyle = colors[index] || 'red';
+                ctx.fillRect(10, 30, 80, 120);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(20, 40, 60, 40);
+                ctx.fillRect(20, 100, 60, 40);
+            } else if (assetName === 'coin') {
+                canvas.width = 50;
+                canvas.height = 50;
+                ctx.fillStyle = 'gold';
+                ctx.beginPath();
+                ctx.arc(25, 25, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'orange';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            } else if (assetName === 'life') {
+                canvas.width = 50;
+                canvas.height = 50;
+                ctx.fillStyle = '#ff5252';
+                ctx.beginPath();
+                ctx.moveTo(25, 10);
+                ctx.bezierCurveTo(25, 5, 40, 5, 40, 10);
+                ctx.bezierCurveTo(40, 20, 25, 35, 25, 45);
+                ctx.bezierCurveTo(25, 35, 10, 20, 10, 10);
+                ctx.bezierCurveTo(10, 5, 25, 5, 25, 10);
+                ctx.fill();
+            } else if (assetName === 'diamond') {
+                canvas.width = 50;
+                canvas.height = 50;
+                ctx.fillStyle = '#00bfff';
+                ctx.beginPath();
+                ctx.moveTo(25, 5);
+                ctx.lineTo(40, 25);
+                ctx.lineTo(25, 45);
+                ctx.lineTo(10, 25);
+                ctx.closePath();
+                ctx.fill();
+            } else if (assetName === 'diamond1') {
+                canvas.width = 50;
+                canvas.height = 50;
+                ctx.fillStyle = '#ff00ff';
+                ctx.beginPath();
+                ctx.moveTo(25, 5);
+                ctx.lineTo(40, 25);
+                ctx.lineTo(25, 45);
+                ctx.lineTo(10, 25);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            assets[assetName] = canvas;
+        }
+        
+        function assetLoaded() {
+            assetsLoaded++;
+            const progress = Math.floor((assetsLoaded / totalAssets) * 100);
+            loadingBar.style.width = `${progress}%`;
+            loadingText.textContent = `Loading assets... ${progress}%`;
+            
+            if (assetsLoaded >= totalAssets) {
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    gameContainer.style.display = 'block';
+                    requestAnimationFrame(scrollRoadMenu);
+                }, 500);
+            }
+        }
+
+        // Play sound function
+        function playSound(soundName) {
+            if (!soundEnabled) return;
+            
+            const sound = sounds[soundName];
+            if (sound && sound.readyState >= 2) {
+                sound.currentTime = 0;
+                sound.play().catch(e => {
+                    console.warn(`Could not play sound ${soundName}:`, e);
+                });
+            }
+        }
+
+        // Stop sound function
+        function stopSound(soundName) {
+            const sound = sounds[soundName];
+            if (sound) {
+                sound.pause();
+                sound.currentTime = 0;
+            }
+        }
+
+        // Get 3 Lives Function (Without Ads)
+        function getThreeLives() {
+            lives += 3;
+            livesCount.textContent = lives;
+            showNotification("+3 Lives Added!");
+            playSound('life');
+        }
+
+        // Exit Popup Functions - FIXED
+        function showExitPopup() {
+            exitPopup.style.display = 'flex';
+            gamePaused = true;
+        }
+
+        function hideExitPopup() {
+            exitPopup.style.display = 'none';
+            gamePaused = false;
+            
+            if (gameState === 'playing') {
+                gameLoop();
+            }
+        }
+
+        function confirmExit() {
+            hideExitPopup();
+            
+            // Try different methods to close the app/window
+            // For mobile apps (Cordova/PhoneGap)
+            if (typeof navigator.app !== 'undefined') {
+                navigator.app.exitApp();
+            } 
+            // For Android devices
+            else if (typeof device !== 'undefined' && device.platform === 'Android') {
+                navigator.app.exitApp();
+            }
+            // For browsers - try to close the window
+            else if (typeof window.close !== 'undefined') {
+                // Only works if the window was opened by JavaScript
+                window.close();
+            }
+            // Last resort - redirect to a blank page or about:blank
+            else {
+                window.location.href = 'about:blank';
+            }
+            
+            // Fallback: If window is still open after 1 second, show message
+            setTimeout(() => {
+                if (!window.closed) {
+                    showNotification("If the app doesn't close, please close the tab/window manually.");
+                }
+            }, 1000);
+        }
+
+        // Game Initialization
+        function init() {
+            resizeGame();
+            window.addEventListener('resize', resizeGame);
+            
+            // Start menu animation
+            requestAnimationFrame(scrollRoadMenu);
+
+            // Controls
+            startButton.addEventListener('click', startGame);
+            restartGameButton.addEventListener('click', startGame);
+            
+            // Features and Rate buttons
+            featuresButton.addEventListener('click', showFeatures);
+            backButton.addEventListener('click', hideFeatures);
+            featuresBackArrow.addEventListener('click', hideFeatures);
+            
+            // Get Lives Button
+            getLivesButton.addEventListener('click', getThreeLives);
+            
+            // Rate Us button
+            rateButton.addEventListener('click', () => {
+                if (navigator.onLine) {
+                    window.open('https://play.google.com/store/apps/details?id=com.jagatpal.carracing', '_blank');
+                } else {
+                    showNotification("Please check your internet connection to rate us!");
+                }
+            });
+            
+            // Speed controls
+            speedUpButton.addEventListener('click', () => adjustSpeed(0.5));
+            speedDownButton.addEventListener('click', () => adjustSpeed(-0.5));
+            
+            // Sound toggle
+            soundToggle.addEventListener('click', toggleSound);
+            
+            // Exit popup controls - FIXED
+            exitYes.addEventListener('click', confirmExit);
+            exitNo.addEventListener('click', hideExitPopup);
+            
+            // Touch events for speed controls
+            speedUpButton.addEventListener('touchstart', (e) => { e.preventDefault(); adjustSpeed(0.5); });
+            speedDownButton.addEventListener('touchstart', (e) => { e.preventDefault(); adjustSpeed(-0.5); });
+
+            // Mouse Controls - FIXED: Arrow controls
+            leftButton.addEventListener('mousedown', () => player.dx = -player.speed * speedMultiplier);
+            rightButton.addEventListener('mousedown', () => player.dx = player.speed * speedMultiplier);
+            leftButton.addEventListener('mouseup', () => player.dx = 0);
+            rightButton.addEventListener('mouseup', () => player.dx = 0);
+            
+            // Touch Controls - FIXED: Arrow controls
+            leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); player.dx = -player.speed * speedMultiplier; });
+            rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); player.dx = player.speed * speedMultiplier; });
+            leftButton.addEventListener('touchend', (e) => { e.preventDefault(); player.dx = 0; });
+            rightButton.addEventListener('touchend', (e) => { e.preventDefault(); player.dx = 0; });
+
+            // Keyboard controls - FIXED: Proper arrow key handling
+            document.addEventListener('keydown', (e) => {
+                if (gameState === 'playing') {
+                    if (e.key === 'ArrowLeft') {
+                        player.dx = -player.speed * speedMultiplier;
+                    }
+                    if (e.key === 'ArrowRight') {
+                        player.dx = player.speed * speedMultiplier;
+                    }
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    player.dx = 0;
+                }
+            });
+
+            // Handle browser back button
+            window.addEventListener('popstate', function(event) {
+                if (gameState === 'menu') {
+                    showExitPopup();
+                } else if (gameState === 'playing' || gameState === 'features') {
+                    showExitPopup();
+                }
+            });
+
+            // Prevent default back button behavior
+            history.pushState(null, null, document.URL);
+            window.addEventListener('popstate', function() {
+                showExitPopup();
+                history.pushState(null, null, document.URL);
+            });
+
+            // Handle Escape key for exit
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    showExitPopup();
+                }
+            });
+        }
+
+        function showFeatures() {
+            featuresScreen.style.display = 'flex';
+            menuScreen.style.display = 'none';
+        }
+
+        function hideFeatures() {
+            featuresScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            soundToggle.textContent = soundEnabled ? "Sound On" : "Sound Off";
+            
+            if (gameState === 'playing') {
+                if (soundEnabled) {
+                    playSound('background');
+                } else {
+                    stopSound('background');
+                }
+            }
+        }
+
+        function adjustSpeed(change) {
+            speedMultiplier = Math.max(minSpeedMultiplier, Math.min(maxSpeedMultiplier, speedMultiplier + change));
+            gameSpeed = 5 * speedMultiplier;
+            speedDisplay.textContent = `Speed: ${speedMultiplier.toFixed(1)}x`;
+            
+            if (player.dx !== 0) {
+                player.dx = Math.sign(player.dx) * player.speed * speedMultiplier;
+            }
+        }
+
+        function resizeGame() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (gameState === 'playing' || !playerCar) {
+                 setupPlayer();
+            }
+            updatePlayerPosition();
+        }
+        
+        function setupPlayer() {
+            if (!playerCar) {
+                playerCar = document.createElement('img');
+                playerCar.src = assets.playerCar.src || assets.playerCar.toDataURL();
+                playerCar.id = 'playerCar';
+                playerCar.className = 'gameObject';
+                gameObjectContainer.appendChild(playerCar);
+            }
+            player.width = canvas.width * 0.15;
+            player.height = player.width * 1.8;
+            playerCar.style.width = `${player.width}px`;
+            playerCar.style.height = `${player.height}px`;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - player.height / 2 - 20;
+            const scale = canvas.width / conceptualWidth;
+            leftBoundary = (conceptualWidth * 0.20) * scale;
+            rightBoundary = (conceptualWidth * 0.80) * scale;
+        }
+
+        function showNotification(text) {
+            notification.textContent = text;
+            notification.style.opacity = '1';
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+            }, 1500);
+        }
+
+        // Game State Management
+        function startGame() {
+            resetGame();
+            gameState = 'playing';
+            menuScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            featuresScreen.style.display = 'none';
+            
+            if (soundEnabled) {
+                playSound('background');
+            }
+            
+            cancelAnimationFrame(gameLoopId);
+            gameLoop();
+        }
+
+        function endGame() {
+            gameState = 'gameOver';
+            stopSound('background');
+            playSound('hit');
+            finalScore.textContent = score;
+            gameOverScreen.style.display = 'flex';
+            cancelAnimationFrame(gameLoopId);
+        }
+
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            scoreDisplay.textContent = 'Score: 0';
+            livesCount.textContent = '3';
+            
+            // Clear all game objects
+            obstacles.forEach(obs => obs.element.remove());
+            coins.forEach(coin => coin.element.remove());
+            livesArray.forEach(life => life.element.remove());
+            diamonds.forEach(diamond => diamond.element.remove());
+            diamonds1.forEach(diamond1 => diamond1.element.remove());
+            
+            obstacles = [];
+            coins = [];
+            livesArray = [];
+            diamonds = [];
+            diamonds1 = [];
+            
+            // Reset player position
+            player.x = canvas.width / 2;
+            player.y = canvas.height - player.height / 2 - 20;
+            updatePlayerPosition();
+            
+            player.dx = 0;
+            nextObstacleSpawn = 0;
+            nextCoinSpawn = 0;
+            nextLifeSpawn = 0;
+            nextDiamondSpawn = 0;
+            nextDiamond1Spawn = 0;
+            
+            // Reset speed to default
+            speedMultiplier = 1;
+            gameSpeed = 5;
+            speedDisplay.textContent = 'Speed: 1.0x';
+            
+            // Reset life spawn tracking
+            lastLifeSpawnScore = 0;
+        }
+
+        // Game Loop - FIXED LIFE SPAWNING (EVERY 300 POINTS)
+        function gameLoop(timestamp) {
+            if (gameState !== 'playing' || gamePaused) return;
+            
+            drawBackground();
+            updatePlayerPosition();
+            
+            // Spawn obstacles - REDUCED SPAWNING (LESS FREQUENT)
+            if (timestamp > nextObstacleSpawn) {
+                spawnObstacle();
+                nextObstacleSpawn = timestamp + Math.random() * 1500 + 1200;
+            }
+            
+            // Spawn coins - FASTER SPAWNING
+            if (timestamp > nextCoinSpawn) {
+                spawnCoin();
+                nextCoinSpawn = timestamp + Math.random() * 1000 + 800;
+            }
+            
+            // FIXED: Spawn life every 300 points
+            if (score >= 300 && score >= lastLifeSpawnScore + 300 && timestamp > nextLifeSpawn) {
+                spawnLife();
+                lastLifeSpawnScore = score;
+                nextLifeSpawn = timestamp + 10000;
+            }
+            
+            // Spawn diamond (blue) every 50 points - FIXED
+            if (score >= 50 && timestamp > nextDiamondSpawn) {
+                spawnDiamond();
+                nextDiamondSpawn = timestamp + 8000;
+            }
+            
+            // Spawn diamond1 (pink) every 100 points - FIXED
+            if (score >= 100 && timestamp > nextDiamond1Spawn) {
+                spawnDiamond1();
+                nextDiamond1Spawn = timestamp + 12000;
+            }
+            
+            updateObjects(obstacles, gameSpeed);
+            updateObjects(coins, gameSpeed);
+            updateObjects(livesArray, gameSpeed);
+            updateObjects(diamonds, gameSpeed);
+            updateObjects(diamonds1, gameSpeed);
+            checkCollisions();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+        
+        function scrollRoadMenu() {
+            if (gameState !== 'menu') return;
+            drawBackground();
+            gameLoopId = requestAnimationFrame(scrollRoadMenu);
+        }
+
+        function drawBackground() {
+            // FIXED: Menu road speed matches game speed
+            let scrollSpeed = (gameState === 'menu') ? 5 : gameSpeed;
+            roadY = (roadY + scrollSpeed) % canvas.height;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw road
+            if (assets.roadImage) {
+                ctx.drawImage(assets.roadImage, 0, roadY, canvas.width, canvas.height);
+                ctx.drawImage(assets.roadImage, 0, roadY - canvas.height, canvas.width, canvas.height);
+            }
+            
+            // Add overlay for menu
+            if (gameState === 'menu') {
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0.6)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function spawnObstacle() {
+            const obstacleImg = document.createElement('img');
+            const carType = Math.floor(Math.random() * 4) + 1;
+            const asset = assets[`obstacle${carType}`];
+            obstacleImg.src = asset.src || asset.toDataURL();
+            obstacleImg.className = 'gameObject obstacle';
+            const obstacleWidth = player.width * 0.95;
+            const obstacleHeight = obstacleWidth * 1.8;
+            obstacleImg.style.width = `${obstacleWidth}px`;
+            obstacleImg.style.height = `${obstacleHeight}px`;
+            const obstacle = { 
+                element: obstacleImg, 
+                x: Math.random() * (rightBoundary - leftBoundary - obstacleWidth) + leftBoundary + (obstacleWidth / 2), 
+                y: -obstacleHeight, 
+                width: obstacleWidth, 
+                height: obstacleHeight 
+            };
+            gameObjectContainer.appendChild(obstacleImg);
+            obstacles.push(obstacle);
+        }
+
+        function spawnCoin() {
+            const coinImg = document.createElement('img');
+            const asset = assets.coin;
+            coinImg.src = asset.src || asset.toDataURL();
+            coinImg.className = 'gameObject coin';
+            const coinSize = 50;
+            coinImg.style.width = `${coinSize}px`;
+            coinImg.style.height = `${coinSize}px`;
+            const coin = { 
+                element: coinImg, 
+                x: Math.random() * (rightBoundary - leftBoundary - coinSize) + leftBoundary + coinSize / 2, 
+                y: -coinSize, 
+                width: coinSize, 
+                height: coinSize 
+            };
+            gameObjectContainer.appendChild(coinImg);
+            coins.push(coin);
+        }
+
+        function spawnLife() {
+            const lifeImg = document.createElement('img');
+            const asset = assets.life;
+            lifeImg.src = asset.src || asset.toDataURL();
+            lifeImg.className = 'gameObject life';
+            const lifeSize = 50;
+            lifeImg.style.width = `${lifeSize}px`;
+            lifeImg.style.height = `${lifeSize}px`;
+            const life = { 
+                element: lifeImg, 
+                x: Math.random() * (rightBoundary - leftBoundary - lifeSize) + leftBoundary + lifeSize / 2, 
+                y: -lifeSize, 
+                width: lifeSize, 
+                height: lifeSize 
+            };
+            gameObjectContainer.appendChild(lifeImg);
+            livesArray.push(life);
+            
+            showNotification("Life Power-up Spawned!");
+        }
+
+        function spawnDiamond() {
+            const diamondImg = document.createElement('img');
+            const asset = assets.diamond;
+            diamondImg.src = asset.src || asset.toDataURL();
+            diamondImg.className = 'gameObject diamond';
+            const diamondSize = 50;
+            diamondImg.style.width = `${diamondSize}px`;
+            diamondImg.style.height = `${diamondSize}px`;
+            const diamond = { 
+                element: diamondImg, 
+                x: Math.random() * (rightBoundary - leftBoundary - diamondSize) + leftBoundary + diamondSize / 2, 
+                y: -diamondSize, 
+                width: diamondSize, 
+                height: diamondSize 
+            };
+            gameObjectContainer.appendChild(diamondImg);
+            diamonds.push(diamond);
+            
+            showNotification("Blue Diamond Spawned!");
+        }
+
+        function spawnDiamond1() {
+            const diamond1Img = document.createElement('img');
+            const asset = assets.diamond1;
+            diamond1Img.src = asset.src || asset.toDataURL();
+            diamond1Img.className = 'gameObject diamond1';
+            const diamond1Size = 50;
+            diamond1Img.style.width = `${diamond1Size}px`;
+            diamond1Img.style.height = `${diamond1Size}px`;
+            const diamond1 = { 
+                element: diamond1Img, 
+                x: Math.random() * (rightBoundary - leftBoundary - diamond1Size) + leftBoundary + diamond1Size / 2, 
+                y: -diamond1Size, 
+                width: diamond1Size, 
+                height: diamond1Size 
+            };
+            gameObjectContainer.appendChild(diamond1Img);
+            diamonds1.push(diamond1);
+            
+            showNotification("Pink Diamond Spawned!");
+        }
+
+        function updatePlayerPosition() {
+            if (!playerCar) return;
+            player.x += player.dx;
+            if (player.x - player.width / 2 < leftBoundary) { player.x = leftBoundary + player.width / 2; }
+            if (player.x + player.width / 2 > rightBoundary) { player.x = rightBoundary - player.width / 2; }
+            playerCar.style.transform = `translate(${player.x - player.width/2}px, ${player.y - player.height/2}px)`;
+        }
+
+        function updateObjects(objectArray, speed) {
+            for (let i = objectArray.length - 1; i >= 0; i--) {
+                const obj = objectArray[i];
+                obj.y += speed;
+                if (obj.y - obj.height / 2 > canvas.height) {
+                    obj.element.remove();
+                    objectArray.splice(i, 1);
+                } else {
+                    obj.element.style.transform = `translate(${obj.x - obj.width/2}px, ${obj.y - obj.height/2}px)`;
+                }
+            }
+        }
+        
+        function checkCollisions() {
+            const playerRect = { 
+                left: player.x - player.width / 2, 
+                right: player.x + player.width / 2, 
+                top: player.y - player.height / 2, 
+                bottom: player.y + player.height / 2, 
+                centerX: player.x 
+            };
+            
+            // Check for collisions with obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                const obstacleRect = { 
+                    left: obstacle.x - obstacle.width / 2, 
+                    right: obstacle.x + obstacle.width / 2, 
+                    top: obstacle.y - obstacle.height / 2, 
+                    bottom: obstacle.y + obstacle.height / 2 
+                };
+                
+                if (playerRect.left < obstacleRect.right && 
+                    playerRect.right > obstacleRect.left && 
+                    playerRect.top < obstacleRect.bottom && 
+                    playerRect.bottom > obstacleRect.top) {
+                    
+                    if (lives > 1) {
+                        // Lose a life but continue playing
+                        lives--;
+                        livesCount.textContent = lives;
+                        showNotification("-1 Life!");
+                        playSound('hit');
+                    } else {
+                        // Game over
+                        endGame();
+                        return;
+                    }
+                    
+                    obstacle.element.remove();
+                    obstacles.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with coins
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                const coinRect = { 
+                    left: coin.x - coin.width / 2, 
+                    right: coin.x + coin.width / 2, 
+                    top: coin.y - coin.height / 2, 
+                    bottom: coin.y + coin.height / 2 
+                };
+                
+                if (playerRect.centerX > coinRect.left && 
+                    playerRect.centerX < coinRect.right && 
+                    playerRect.top < coinRect.bottom && 
+                    playerRect.bottom > coinRect.top) {
+                    score += 5;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    showNotification("+5 Points!");
+                    playSound('collect');
+                    coin.element.remove();
+                    coins.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with life power-ups
+            for (let i = livesArray.length - 1; i >= 0; i--) {
+                const life = livesArray[i];
+                const lifeRect = { 
+                    left: life.x - life.width / 2, 
+                    right: life.x + life.width / 2, 
+                    top: life.y - life.height / 2, 
+                    bottom: life.y + life.height / 2 
+                };
+                
+                if (playerRect.centerX > lifeRect.left && 
+                    playerRect.centerX < lifeRect.right && 
+                    playerRect.top < lifeRect.bottom && 
+                    playerRect.bottom > lifeRect.top) {
+                    lives++;
+                    livesCount.textContent = lives;
+                    showNotification("+1 Life!");
+                    playSound('life');
+                    life.element.remove();
+                    livesArray.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with diamonds (20 points)
+            for (let i = diamonds.length - 1; i >= 0; i--) {
+                const diamond = diamonds[i];
+                const diamondRect = { 
+                    left: diamond.x - diamond.width / 2, 
+                    right: diamond.x + diamond.width / 2, 
+                    top: diamond.y - diamond.height / 2, 
+                    bottom: diamond.y + diamond.height / 2 
+                };
+                
+                if (playerRect.centerX > diamondRect.left && 
+                    playerRect.centerX < diamondRect.right && 
+                    playerRect.top < diamondRect.bottom && 
+                    playerRect.bottom > diamondRect.top) {
+                    score += 20;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    showNotification("+20 Points! Blue Diamond!");
+                    playSound('diamond');
+                    diamond.element.remove();
+                    diamonds.splice(i, 1);
+                }
+            }
+            
+            // Check for collisions with diamonds1 (100 points)
+            for (let i = diamonds1.length - 1; i >= 0; i--) {
+                const diamond1 = diamonds1[i];
+                const diamond1Rect = { 
+                    left: diamond1.x - diamond1.width / 2, 
+                    right: diamond1.x + diamond1.width / 2, 
+                    top: diamond1.y - diamond1.height / 2, 
+                    bottom: diamond1.y + diamond1.height / 2 
+                };
+                
+                if (playerRect.centerX > diamond1Rect.left && 
+                    playerRect.centerX < diamond1Rect.right && 
+                    playerRect.top < diamond1Rect.bottom && 
+                    playerRect.bottom > diamond1Rect.top) {
+                    score += 100;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    showNotification("+100 Points! Pink Diamond!");
+                    playSound('diamond1');
+                    diamond1.element.remove();
+                    diamonds1.splice(i, 1);
+                }
+            }
+        }
+        
+        // Start the game loading process
+        preloadAssets();
+        // Initialize the game after a short delay to show loading screen
+        setTimeout(init, 500);
+    </script>
+
+</body>
+</html>
